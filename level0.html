@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Конфигурации</title>
+    <script type="module" src="./level0.js"></script>
+    <script type="module" src="./common.js"></script>
+</head>
+
+<body>
+    <h1>Конфигурации</h1>
+    <div id="user_header"
+        title="Авторизационные данные пользователя, кликните для повторной авторизации">
+        Пользователь
+    </div>
+    <br>
+    <fieldset>
+        <legend>Выберите конфигурацию:</legend>
+        <div>
+            <input type="radio" id="c0" name="config" value="0" checked/>
+            <label for="c0">Конфигурация 0</label>
+        </div>
+        <div>
+            <input type="radio" id="c1" name="config" value="1"/>
+            <label for="c1">Конфигурация 1</label>
+        </div>
+        <div>
+            <input type="radio" id="c2" name="config" value="2"/>
+            <label for="c2">Конфигурация 2</label>
+        </div>
+    </fieldset>
+    <br>
+    <div>
+        <button id="btnOpen"
+            title="Открыть конфигурацию в дочернем окно">
+            Открыть
+        </button>
+    </div>
+    <br>
+    <fieldset>
+        <legend>Выберите конфигурации:</legend>
+        <div>
+            <input type="checkbox" id="c0" name="descend" value="0" checked/>
+            <label for="c0">Конфигурация 0</label>
+        </div>
+        <div>
+            <input type="checkbox" id="c1" name="descend" value="1" checked/>
+            <label for="c1">Конфигурация 1</label>
+        </div>
+        <div>
+            <input type="checkbox" id="c2" name="descend" value="2" checked/>
+            <label for="c2">Конфигурация 2</label>
+        </div>
+    </fieldset>
+    <br>
+    <div>
+        <button id="btnCount" 
+            title="Сосчитать количество открытых окон, являющихся потомками выбранных конфигураций">
+            Сосчитать
+        </button>
+        <button id="btnClose" 
+            title="Закрыть открытые окна, являющиеся потомками выбранных конфигураций">
+            Закрыть
+        </button>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Level 1</title>
+    <script type="module" src="./level1.js"></script>
+    <script type="module" src="./common.js"></script>
+</head>
+
+<body>
+    <h2>Документы конфигурации</h2>
+    <div id="user_header"
+        title="Авторизационные данные пользователя, кликните для повторной авторизации">
+        Пользователь
+    </div>
+    <br>
+    <fieldset>
+        <legend>Выберите:</legend>
+        <div>
+            <input type="radio" id="d0" name="doc" value="0-000" checked/>
+            <label for="d0">Документ 0</label>
+        </div>
+        <div>
+            <input type="radio" id="d1" name="doc" value="0-001"/>
+            <label for="d1">Документ 1</label>
+        </div>
+        <div>
+            <input type="radio" id="d2" name="doc" value="0-002"/>
+            <label for="d2">Документ 2</label>
+        </div>
+    </fieldset>
+    <br>
+    <button id="btnOpen"
+        title="Открыть выбранный документ в дочернем окне">
+        Открыть
+    </button>
+</body>
+
+</html>
