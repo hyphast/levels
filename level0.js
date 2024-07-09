@@ -18,16 +18,16 @@ window.addEventListener('load', () => {
     });
 
     btnCount.addEventListener('click', event => {
-        // TODO: рассчитайте маску выбранных конфигураций, например, для комбинации
-        // (Конфигурация 0 | Конфигурация 1 | Конфигурация 2) получим cfg_mask = 7 = (1 << 0 | 1 << 1 | 1 << 2) 
-        // подсчитайте количество открытых дочерних окон выбранных конфигураций
-        const cfg_mask = 7;
+        const checkboxes = document.querySelectorAll('input[name="descend"]:checked');
+        const cfg_mask = Array.from(checkboxes).reduce((mask, checkbox) =>  mask | 1 << +checkbox.value, 0);
         comm.countDescendants({ cfg_mask });
         event.preventDefault();
     });
 
     btnClose.addEventListener('click', event => {
-        comm.postToChilds({ cmd: 'must-close' });
+        const checkboxes = document.querySelectorAll('input[name="descend"]:checked');
+        const cfg_mask = Array.from(checkboxes).reduce((mask, checkbox) =>  mask | 1 << +checkbox.value, 0);
+        comm.closeDescendants({ cfg_mask });
         event.preventDefault();
     });
 

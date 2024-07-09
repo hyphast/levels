@@ -21,10 +21,16 @@ export function CreateService(options, callback) {
         state.user = user;
     }
 
-    function mustClose(user) {
+    function mustClose(user, payload) {
+        const { cfg_mask } = payload;
+        const { cfg } = options;
+
+        const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
+        if (!accepted) return;
+
         // close all descendants
         for (const child of state.childs.values()) {
-            if (!child.closed) child.postMessage({ cmd: 'must-close' });
+            if (!child.closed) child.postMessage({ cmd: 'must-close', payload: { cfg_mask } });
         }
         // do not close top window
         if (!window.opener || window.opener.closed) {
@@ -57,9 +63,8 @@ export function CreateService(options, callback) {
     function countChilds(payload) {
         const { cfg_mask } = payload;
         const { cfg } = options;
-        // TODO: count cfg descendants only
 
-        const accepted = true;
+        const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
         if (!accepted) { 
              if (window.opener && !window.opener.closed) {
                 window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0 } });
@@ -95,6 +100,7 @@ export function CreateService(options, callback) {
     // windows communication messages
     window.addEventListener('message', event => {
         const { cmd, payload } = event.data;
+        const { user } = state;
         switch (cmd) {
             // posted by login
             case 'logged-in':
@@ -106,7 +112,6 @@ export function CreateService(options, callback) {
                 break;
             // posted to parent when loaded
             case 'ask-user':
-                const { user } = state;
                 userAsk(event.source, payload.key, user);
                 break;
             // posted to child when answered
@@ -119,7 +124,7 @@ export function CreateService(options, callback) {
                 break;
             // posted to child from mustClose
             case 'must-close':
-                mustClose();
+                mustClose(user, payload);
                 break;
              // posted by parent
             case 'count-childs':
@@ -156,6 +161,9 @@ export function CreateService(options, callback) {
         },
         countDescendants(payload) {
             countChilds(payload);
+        },
+        closeDescendants(payload) {
+            mustClose(state.user, payload);
         }
     }
 };
