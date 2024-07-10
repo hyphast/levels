@@ -24,13 +24,28 @@ export function CreateService(options, callback) {
     function mustClose(user, payload) {
         const { cfg_mask } = payload;
         const { cfg } = options;
+        const counted_child_payload_type = 'closed-descendants-count';
 
         const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
-        if (!accepted) return;
-
+        if (!accepted) {
+             if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0, type: counted_child_payload_type } });
+            }
+            return;
+        }
+        state.counter = 0;
+        state.copened = 0;
         // close all descendants
         for (const child of state.childs.values()) {
-            if (!child.closed) child.postMessage({ cmd: 'must-close', payload: { cfg_mask } });
+            if (!child.closed) {
+               child.postMessage({ cmd: 'must-close', payload: { cfg_mask } });
+               state.copened += 1;
+            }
+        }
+        if (state.copened === 0) {
+          if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1, type: counted_child_payload_type } });
+          }
         }
         // do not close top window
         if (!window.opener || window.opener.closed) {
@@ -63,11 +78,12 @@ export function CreateService(options, callback) {
     function countChilds(payload) {
         const { cfg_mask } = payload;
         const { cfg } = options;
+        const counted_child_payload_type = 'descendants-count';
 
         const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
         if (!accepted) { 
              if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0 } });
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0, type: counted_child_payload_type } });
             }
             return;
         }
@@ -81,20 +97,20 @@ export function CreateService(options, callback) {
         }
         if (state.copened === 0) {
             if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 } });
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1, type: counted_child_payload_type } });
             }
         }
     }
     // child post 'counted-child'
     function countedChild(payload) {
-        const { count } = payload;
+        const { count, type } = payload;
         state.counter += count;
         state.copened -= 1;
         if (state.copened === 0) {
             if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 + state.counter } });            
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 + state.counter, type } });            
             }
-            callback({ type: 'descendants-count', value: state.counter });
+            callback({ type, value: state.counter });
         }
     }
     // windows communication messages
