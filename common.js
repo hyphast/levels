@@ -21,31 +21,10 @@ export function CreateService(options, callback) {
         state.user = user;
     }
 
-    function mustClose(user, payload) {
-        const { cfg_mask } = payload;
-        const { cfg } = options;
-        const counted_child_payload_type = 'closed-descendants-count';
-
-        const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
-        if (!accepted) {
-             if (window.opener && !window.opener.closed) {
-              window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0, type: counted_child_payload_type } });
-            }
-            return;
-        }
-        state.counter = 0;
-        state.copened = 0;
+    function mustClose(user) {
         // close all descendants
         for (const child of state.childs.values()) {
-            if (!child.closed) {
-               child.postMessage({ cmd: 'must-close', payload: { cfg_mask } });
-               state.copened += 1;
-            }
-        }
-        if (state.copened === 0) {
-          if (window.opener && !window.opener.closed) {
-              window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1, type: counted_child_payload_type } });
-          }
+            if (!child.closed) child.postMessage({ cmd: 'must-close' });
         }
         // do not close top window
         if (!window.opener || window.opener.closed) {
@@ -78,12 +57,11 @@ export function CreateService(options, callback) {
     function countChilds(payload) {
         const { cfg_mask } = payload;
         const { cfg } = options;
-        const counted_child_payload_type = 'descendants-count';
 
         const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
         if (!accepted) { 
              if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0, type: counted_child_payload_type } });
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 0 } });
             }
             return;
         }
@@ -97,26 +75,65 @@ export function CreateService(options, callback) {
         }
         if (state.copened === 0) {
             if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1, type: counted_child_payload_type } });
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 } });
             }
         }
     }
     // child post 'counted-child'
     function countedChild(payload) {
-        const { count, type } = payload;
+        const { count } = payload;
         state.counter += count;
         state.copened -= 1;
         if (state.copened === 0) {
             if (window.opener && !window.opener.closed) {
-                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 + state.counter, type } });            
+                window.opener.postMessage({ cmd: 'counted-child', payload: { count: 1 + state.counter } });            
             }
-            callback({ type, value: state.counter });
+            callback({ type: 'descendants-count', value: state.counter });
+        }
+    }
+    // parent post 'close-childs'
+    function closeChilds(payload) {
+        const { cfg_mask } = payload;
+        const { cfg } = options;
+     
+        const accepted = (cfg_mask & (1 << cfg)) || cfg === -1;
+        if (!accepted) { 
+             if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({ cmd: 'closed-child', payload: { count: 0 } });
+            }
+            return;
+        }
+        state.counter = 0;
+        state.copened = 0;
+        for (const child of state.childs.values()) {
+            if (!child.closed) {
+                child.postMessage({ cmd: 'close-childs', payload });
+                state.copened += 1;
+            }
+        }
+        if (state.copened === 0) {
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({ cmd: 'closed-child', payload: { count: 1 } });
+                setTimeout(window.close, 0);
+            }
+        }
+    }
+    // child post 'closed-child'
+    function closedChild(payload) {
+        const { count } = payload;
+        state.counter += count;
+        state.copened -= 1;
+        if (state.copened === 0) {
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({ cmd: 'closed-child', payload: { count: 1 + state.counter } });
+                setTimeout(window.close, 0);
+            }
+            callback({ type: 'closed-descendants-count', value: state.counter });
         }
     }
     // windows communication messages
     window.addEventListener('message', event => {
         const { cmd, payload } = event.data;
-        const { user } = state;
         switch (cmd) {
             // posted by login
             case 'logged-in':
@@ -128,6 +145,7 @@ export function CreateService(options, callback) {
                 break;
             // posted to parent when loaded
             case 'ask-user':
+                const { user } = state;
                 userAsk(event.source, payload.key, user);
                 break;
             // posted to child when answered
@@ -140,7 +158,7 @@ export function CreateService(options, callback) {
                 break;
             // posted to child from mustClose
             case 'must-close':
-                mustClose(user, payload);
+                mustClose();
                 break;
              // posted by parent
             case 'count-childs':
@@ -149,6 +167,14 @@ export function CreateService(options, callback) {
             // posted by child
             case 'counted-child':
                 countedChild(payload);
+                break;
+            // posted by parent
+            case 'close-childs':
+                closeChilds(payload);
+                break;
+            // posted by child
+             case 'closed-child':
+                closedChild(payload);
                 break;
             // end of cmd switch
         }
@@ -179,7 +205,7 @@ export function CreateService(options, callback) {
             countChilds(payload);
         },
         closeDescendants(payload) {
-            mustClose(state.user, payload);
+            closeChilds(payload);
         }
     }
 };
